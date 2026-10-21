@@ -1,11 +1,10 @@
 {
-  "name": "residue-server",
+  "name": "residue-game",
   "version": "1.0.0",
   "description": "Residue - Multiplayer living board game",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "node index.js"
+    "start": "node index.js"
   },
   "dependencies": {
     "express": "^4.21.0",
@@ -14,5 +13,8 @@
     "uuid": "^10.0.0",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

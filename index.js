@@ -16,10 +16,10 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
-// Serve the game frontend
-app.use(express.static(path.join(__dirname, '../client/public')));
+// Serve static files from the same folder
+app.use(express.static(__dirname));
 
-// ============ IN-MEMORY DATA (will be replaced with DB later) ============
+// ============ IN-MEMORY DATA ============
 const users = new Map();
 const messages = [];
 const boardState = {
@@ -100,9 +100,9 @@ app.post('/api/login', async (req, res) => {
   res.json({ token, user: { id: user.id, username, role: user.role, life: user.life, power: user.power, isGod: user.isGod } });
 });
 
-// Catch-all: send the game page
+// Serve the game
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/public/index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // ============ SOCKET.IO ============
