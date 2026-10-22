@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Residue</title>
+  <style>
+    :root {
+      --bg: #0c0c12;
+      --panel: #16161f;
+      --border: #2a2a3a;
+      --text: #e8e8e8;
+      --accent: #8b5cf6;
+      --god: #fbbf24;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* LOGIN */
+    #login-screen {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-box {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 24px;
+      width: 100%;
+      max-width: 340px;
+      text-align: center;
+    }
+    .login-box h1 {
+      font-size: 2.2rem;
+      letter-spacing: 6px;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+    .login-box p { color: #777; margin-bottom: 24px; font-size: 0.9rem; }
+    .login-box input {
+      width: 100%;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      background: #0d0d14;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: white;
+      font-size: 1rem;
+    }
+    .login-box button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 6px;
+    }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-secondary { background: #2a2a3a; color: #ccc; }
+    .error { color: #f43f5e; margin-top: 12px; font-size: 0.9rem; }
+
+    /* APP */
+    #app { display: none; flex-direction: column; height: 100%; }
+    header {
+      padding: 10px 16px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header .title { font-weight: 700; letter-spacing: 3px; color: var(--accent); }
+    header .info { font-size: 0.8rem; color: #aaa; }
+
+    #content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      padding-bottom: 80px;
+    }
+
+    /* BOTTOM NAV */
+    nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 64px;
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+      display: flex;
+      z-index: 100;
+    }
+    nav button {
+      flex: 1;
+      background: none;
+      border: none;
+      color: #777;
+      font-size: 0.7rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      cursor: pointer;
+    }
+    nav button.active { color: var(--accent); }
+    nav button .icon { font-size: 1.25rem; }
+
+    /* BOARD */
+    .board-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .board {
+      position: relative;
+      width: 100%;
+      max-width: 360px;
+      aspect-ratio: 1;
+      background: #111118;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .space {
+      position: absolute;
+      width: 11.5%;
+      height: 11.5%;
+      background: #1a1a24;
+      border: 1px solid #2a2a3a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.55rem;
+      text-align: center;
+      color: #aaa;
+    }
+    .space.START { background: #1e3a2f; color: #4ade80; }
+    .space.ATTACK { background: #3a1a1a; color: #f87171; }
+    .space.ABSORB { background: #1a1a2e; color: #a78bfa; }
+    .space.PRESERVE { background: #1a2e1a; color: #86efac; }
+    .space.CORRUPT { background: #2e1a2e; color: #e879f9; }
+    .space.MEMORY { background: #1a1a24; }
+    .space.has-residue { box-shadow: inset 0 0 0 2px #fbbf24; }
+
+    .token {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid white;
+      z-index: 10;
+      transition: all 0.4s ease;
+      box-shadow: 0 0 6px rgba(0,0,0,0.6);
+    }
+
+    .turn-bar {
+      width: 100%;
+      max-width: 360px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+    .turn-bar .who { font-weight: 600; margin-bottom: 8px; }
+    .dice-btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .dice-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .last-roll { font-size: 1.4rem; margin: 8px 0; color: var(--god); }
+
+    /* ACTION / COMBAT */
+    .action-panel, .combat-panel {
+      width: 100%;
+      max-width: 360px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-top: 8px;
+    }
+    .action-panel button, .combat-panel button {
+      width: 100%;
+      padding: 11px;
+      margin: 5px 0;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-attack { background: #dc2626; color: white; }
+    .btn-absorb { background: #7c3aed; color: white; }
+    .btn-preserve { background: #16a34a; color: white; }
+    .btn-corrupt { background: #9333ea; color: white; }
+    .btn-skip { background: #374151; color: #ccc; }
+    .btn-block { background: #2563eb; color: white; }
+    .btn-accept { background: #6b7280; color: white; }
+
+    /* CHAT */
+    .chat-box {
+      display: flex;
+      flex-direction: column;
+      height: calc(100dvh - 150px);
+    }
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 4px;
+    }
+    .msg {
+      padding: 8px 12px;
+      border-radius: 10px;
+      max-width: 85%;
+      font-size: 0.9rem;
+    }
+    .msg.public { background: #1a1a24; align-self: flex-start; }
+    .msg.private { background: #1e1430; border-left: 3px solid var(--accent); align-self: flex-start; }
+    .msg.own { align-self: flex-end; background: #2a1f4a; }
+    .msg .meta { font-size: 0.7rem; color: #777; margin-bottom: 2px; }
+    .chat-input {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .chat-input input {
+      flex: 1;
+      padding: 12px;
+      background: #0d0d14;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: white;
+    }
+    .chat-input button {
+      padding: 0 18px;
+      background: var(--accent);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-weight: 600;
+    }
+
+    /* CARDS */
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .card h2 { color: var(--accent); margin-bottom: 10px; font-size: 1.1rem; }
+    .stat { display: flex; justify-content: space-between; margin: 6px 0; }
+
+    #god-panel {
+      display: none;
+      background: #1a1508;
+      border: 1px solid var(--god);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    #god-panel h2 { color: var(--god); }
+    #god-panel input, #god-panel select {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+      background: #0d0d14;
+      border: 1px solid #444;
+      border-radius: 8px;
+      color: white;
+    }
+    #god-panel button {
+      width: 100%;
+      padding: 11px;
+      margin-top: 8px;
+      background: var(--god);
+      border: none;
+      border-radius: 8px;
+      color: #111;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .hidden { display: none !important; }
+    .player-list { font-size: 0.85rem; }
+    .player-list div { padding: 4px 0; border-bottom: 1px solid #222; }
+  </style>
+</head>
+<body>
+  <!-- LOGIN -->
+  <div id="login-screen">
+    <div class="login-box">
+      <h1>RESIDUE</h1>
+      <p>A living board of memory.<br>Every choice stays forever.</p>
+      <input id="username" placeholder="Username" />
+      <input id="password" type="password" placeholder="Password" />
+      <button class="btn-primary" onclick="login()">Enter</button>
+      <button class="btn-secondary" onclick="register()">Create Account</button>
+      <div id="login-error" class="error"></div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="app">
+    <header>
+      <div class="title">RESIDUE</div>
+      <div class="info">
+        <span id="header-user"></span>
+        <span id="header-role" style="opacity:0.6;margin-left:6px;"></span>
+      </div>
+    </header>
+
+    <div id="content">
+      <!-- BOARD TAB -->
+      <div id="tab-board" class="tab">
+        <div class="board-container">
+          <div class="board" id="board"></div>
+
+          <div class="turn-bar">
+            <div class="who" id="turn-who">Waiting for players...</div>
+            <div class="last-roll" id="last-roll"></div>
+            <button class="dice-btn" id="roll-btn" onclick="rollDice()" disabled>Roll Dice</button>
+          </div>
+
+          <div class="action-panel hidden" id="action-panel">
+            <div style="margin-bottom:8px;font-size:0.9rem;" id="space-info"></div>
+            <button class="btn-attack" onclick="doAction('attack')">Attack a Player</button>
+            <button class="btn-absorb" onclick="doAction('absorb')">Absorb (Gain Power)</button>
+            <button class="btn-preserve" onclick="doAction('preserve')">Preserve</button>
+            <button class="btn-corrupt" onclick="doAction('corrupt')">Corrupt</button>
+            <button class="btn-skip" onclick="doAction('skip')">Skip</button>
+          </div>
+
+          <div class="combat-panel hidden" id="combat-panel">
+            <div id="combat-info" style="margin-bottom:10px;"></div>
+            <button class="btn-block" id="block-btn" onclick="respondCombat(true)">Block Attack</button>
+            <button class="btn-accept" onclick="respondCombat(false)">Accept Hit</button>
+          </div>
+
+          <div class="card" style="width:100%;max-width:360px;">
+            <h2>Players</h2>
+            <div class="player-list" id="player-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMMUNICATE -->
+      <div id="tab-communicate" class="tab hidden">
+        <div class="chat-box">
+          <div class="messages" id="messages"></div>
+          <div class="chat-input">
+            <input id="chat-input" placeholder="Message... (@user for private)" />
+            <button onclick="sendMessage()">Send</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SKILLS -->
+      <div id="tab-skills" class="tab hidden">
+        <div class="card">
+          <h2>Your Stats</h2>
+          <div class="stat"><span>Life</span><span id="stat-life">100</span></div>
+          <div class="stat"><span>Power</span><span id="stat-power">10</span></div>
+          <div class="stat"><span>Role</span><span id="stat-role">—</span></div>
+          <div class="stat"><span>Position</span><span id="stat-pos">0</span></div>
+        </div>
+      </div>
+
+      <!-- ROLE -->
+      <div id="tab-role" class="tab hidden">
+        <div class="card">
+          <h2>Your Role</h2>
+          <p id="role-name" style="font-size:1.2rem;font-weight:600;margin-bottom:6px;"></p>
+          <p id="role-desc" style="color:#999;font-size:0.9rem;"></p>
+        </div>
+
+        <div id="god-panel">
+          <h2>⚔ God Controls</h2>
+          <p style="font-size:0.8rem;color:#aaa;margin-bottom:10px;">You are invisible to players.</p>
+          <input id="god-target" placeholder="Target username" />
+          <select id="god-action">
+            <option value="take-life">Take Life</option>
+            <option value="give-life">Give Life</option>
+            <option value="give-power">Give Power</option>
+            <option value="skip-turn">Skip Their Turn</option>
+            <option value="ban">Ban Player</option>
+          </select>
+          <input id="god-value" type="number" placeholder="Value (optional)" />
+          <button onclick="godAction()">Execute</button>
+          <button onclick="loadAllMessages()" style="background:#333;color:#eee;">View All Messages</button>
+          <div id="all-messages" style="margin-top:10px;max-height:180px;overflow-y:auto;font-size:0.8rem;"></div>
+        </div>
+      </div>
+    </div>
+
+    <nav>
+      <button class="active" onclick="switchTab('board')"><span class="icon">▣</span>Board</button>
+      <button onclick="switchTab('communicate')"><span class="icon">💬</span>Communicate</button>
+      <button onclick="switchTab('skills')"><span class="icon">⚡</span>Skills</button>
+      <button onclick="switchTab('role')"><span class="icon">🎭</span>Role</button>
+    </nav>
+  </div>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    let socket, token, currentUser;
+    let gameState = null;
+
+    const roleDescriptions = {
+      "Fading Echo": "You are slowly disappearing. Hard to notice, weak presence.",
+      "Memory Keeper": "You protect memories. Preserving comes naturally.",
+      "Corruptor": "You twist what you touch. Corruption is your strength.",
+      "Preserver": "You resist change. The world stays clearer around you.",
+      "Wanderer": "You move freely. Hard to pin down.",
+      "Bound Fragment": "Tied to places. Stronger in familiar spaces.",
+      "Silent Observer": "You see more. Speaking costs you.",
+      "Echo Hunter": "You seek other Residuals. Combat is your path."
+    };
+
+    // Board layout positions (32 spaces around the edge)
+    function getSpacePosition(i) {
+      // 0-7 top, 8-15 right, 16-23 bottom, 24-31 left
+      const size = 11.5;
+      if (i < 8) return { top: '0%', left: (i * 12.5) + '%' };
+      if (i < 16) return { top: ((i-8) * 12.5) + '%', left: '87.5%' };
+      if (i < 24) return { top: '87.5%', left: ((23-i) * 12.5) + '%' };
+      return { top: ((31-i) * 12.5) + '%', left: '0%' };
+    }
+
+    function buildBoard() {
+      const board = document.getElementById('board');
+      board.innerHTML = '';
+      for (let i = 0; i < 32; i++) {
+        const space = document.createElement('div');
+        space.className = 'space';
+        space.id = 'space-' + i;
+        const pos = getSpacePosition(i);
+        space.style.top = pos.top;
+        space.style.left = pos.left;
+        space.textContent = i === 0 ? 'START' : i;
+        board.appendChild(space);
+      }
+    }
+
+    function updateBoardVisual() {
+      if (!gameState) return;
+      // Update space types & residue
+      gameState.board.forEach((s, i) => {
+        const el = document.getElementById('space-' + i);
+        if (!el) return;
+        el.className = 'space ' + s.type;
+        if (s.residue) el.classList.add('has-residue');
+        el.textContent = s.type === 'START' ? 'START' : (s.type === 'END' ? 'END' : i);
+      });
+
+      // Remove old tokens
+      document.querySelectorAll('.token').forEach(t => t.remove());
+
+      // Place tokens
+      gameState.players.forEach((p, idx) => {
+        const spaceEl = document.getElementById('space-' + p.position);
+        if (!spaceEl) return;
+        const token = document.createElement('div');
+        token.className = 'token';
+        token.style.background = p.color;
+        token.title = p.username;
+        // offset multiple tokens on same space
+        token.style.transform = `translate(${(idx%3)*6-6}px, ${Math.floor(idx/3)*6}px)`;
+        spaceEl.appendChild(token);
+      });
+    }
+
+    // AUTH
+    async function register() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      if (!username || !password) return showError("Fill both fields");
+      try {
+        const res = await fetch('/api/register', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (data.error) return showError(data.error);
+        afterAuth(data);
+      } catch (e) { showError("Server error"); }
+    }
+
+    async function login() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      if (!username || !password) return showError("Fill both fields");
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (data.error) return showError(data.error);
+        afterAuth(data);
+      } catch (e) { showError("Server error"); }
+    }
+
+    function showError(msg) { document.getElementById('login-error').textContent = msg; }
+
+    function afterAuth(data) {
+      token = data.token;
+      currentUser = data.user;
+      localStorage.setItem('residue-token', token);
+      localStorage.setItem('residue-user', JSON.stringify(currentUser));
+
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+      document.getElementById('header-user').textContent = currentUser.username;
+      document.getElementById('header-role').textContent = currentUser.role;
+      document.getElementById('stat-life').textContent = currentUser.life;
+      document.getElementById('stat-power').textContent = currentUser.power;
+      document.getElementById('stat-role').textContent = currentUser.role;
+      document.getElementById('role-name').textContent = currentUser.role;
+      document.getElementById('role-desc').textContent = roleDescriptions[currentUser.role] || "";
+
+      if (currentUser.isGod) document.getElementById('god-panel').style.display = 'block';
+
+      buildBoard();
+      connectSocket();
+    }
+
+    function connectSocket() {
+      socket = io();
+      socket.emit('join', { token });
+
+      socket.on('full-state', (data) => {
+        gameState = data.game;
+        updateBoardVisual();
+        updateTurnUI();
+        updatePlayerList();
+        data.messages.forEach(addMessage);
+      });
+
+      socket.on('players-update', (players) => {
+        if (gameState) gameState.players = players;
+        updateBoardVisual();
+        updatePlayerList();
+        const me = players.find(p => p.username === currentUser.username);
+        if (me) {
+          document.getElementById('stat-life').textContent = me.life;
+          document.getElementById('stat-power').textContent = me.power;
+          document.getElementById('stat-pos').textContent = me.position;
+        }
+      });
+
+      socket.on('board-update', (board) => {
+        if (gameState) gameState.board = board;
+        updateBoardVisual();
+      });
+
+      socket.on('dice-rolled', (data) => {
+        document.getElementById('last-roll').textContent = `🎲 ${data.roll}`;
+        if (gameState) {
+          const p = gameState.players.find(pl => pl.username === data.username);
+          if (p) p.position = data.position;
+        }
+        updateBoardVisual();
+
+        if (data.username === currentUser.username) {
+          document.getElementById('action-panel').classList.remove('hidden');
+          document.getElementById('space-info').textContent = `Landed on: ${data.space.type}`;
+        }
+      });
+
+      socket.on('turn-change', (data) => {
+        document.getElementById('action-panel').classList.add('hidden');
+        document.getElementById('combat-panel').classList.add('hidden');
+        document.getElementById('last-roll').textContent = '';
+        updateTurnUI(data.current);
+      });
+
+      socket.on('combat-start', (combat) => {
+        document.getElementById('combat-panel').classList.remove('hidden');
+        document.getElementById('combat-info').textContent =
+          `${combat.attacker} attacks you! (Roll: ${combat.roll}, Power: ${combat.power})`;
+        document.getElementById('block-btn').style.display = combat.canBlock ? 'block' : 'none';
+        if (!combat.canBlock) {
+          document.getElementById('combat-info').textContent += " — God's attack cannot be blocked!";
+        }
+      });
+
+      socket.on('combat-result', (r) => {
+        document.getElementById('combat-panel').classList.add('hidden');
+        const text = r.blocked
+          ? `${r.target} blocked the attack!`
+          : `${r.attacker} hit ${r.target} for ${r.damage} damage!`;
+        addSystemMessage(text);
+      });
+
+      socket.on('new-message', addMessage);
+      socket.on('all-messages', (msgs) => {
+        document.getElementById('all-messages').innerHTML = msgs.map(m =>
+          `<div><b>${m.from}</b>${m.type==='private'?' → '+m.to:''}: ${m.text}</div>`
+        ).join('');
+      });
+    }
+
+    function updateTurnUI(current) {
+      const who = current || (gameState && gameState.players[gameState.turnIndex]?.username) || '...';
+      document.getElementById('turn-who').textContent = `Turn: ${who}`;
+      const isMyTurn = who === currentUser.username;
+      document.getElementById('roll-btn').disabled = !isMyTurn;
+    }
+
+    function updatePlayerList() {
+      if (!gameState) return;
+      document.getElementById('player-list').innerHTML = gameState.players.map(p =>
+        `<div>
+          <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${p.color};margin-right:6px;"></span>
+          ${p.username} (${p.role}) — Life ${p.life} | Pos ${p.position}
+        </div>`
+      ).join('');
+    }
+
+    function rollDice() {
+      socket.emit('roll-dice');
+      document.getElementById('roll-btn').disabled = true;
+    }
+
+    function doAction(action) {
+      if (action === 'attack') {
+        const target = prompt("Enter username to attack:");
+        if (!target) return;
+        socket.emit('space-action', { action: 'attack', target });
+      } else {
+        socket.emit('space-action', { action });
+      }
+      document.getElementById('action-panel').classList.add('hidden');
+    }
+
+    function respondCombat(blocked) {
+      socket.emit('combat-response', { blocked });
+      document.getElementById('combat-panel').classList.add('hidden');
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+      if (text.startsWith('@')) {
+        const space = text.indexOf(' ');
+        if (space === -1) return alert("Use: @username message");
+        socket.emit('private-message', { to: text.slice(1, space), text: text.slice(space+1) });
+      } else {
+        socket.emit('public-message', { text });
+      }
+      input.value = '';
+    }
+
+    function addMessage(msg) {
+      const box = document.getElementById('messages');
+      const el = document.createElement('div');
+      el.className = `msg ${msg.type} ${msg.from === currentUser.username ? 'own' : ''}`;
+      el.innerHTML = `<div class="meta">${msg.from}${msg.type==='private'?' → '+msg.to:''}</div>${msg.text}`;
+      box.appendChild(el);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function addSystemMessage(text) {
+      const box = document.getElementById('messages');
+      const el = document.createElement('div');
+      el.className = 'msg public';
+      el.style.opacity = '0.7';
+      el.style.fontStyle = 'italic';
+      el.textContent = text;
+      box.appendChild(el);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function godAction() {
+      const target = document.getElementById('god-target').value.trim();
+      const action = document.getElementById('god-action').value;
+      const value = parseInt(document.getElementById('god-value').value) || undefined;
+      socket.emit('god-action', { action, targetUsername: target, value });
+    }
+
+    function loadAllMessages() { socket.emit('god-get-all-messages'); }
+
+    function switchTab(name) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.add('hidden'));
+      document.getElementById('tab-' + name).classList.remove('hidden');
+      document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+    }
+
+    // Auto login
+    window.onload = () => {
+      const saved = localStorage.getItem('residue-token');
+      const savedUser = localStorage.getItem('residue-user');
+      if (saved && savedUser) {
+        token = saved;
+        currentUser = JSON.parse(savedUser);
+        afterAuth({ token, user: currentUser });
+      }
+    };
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && document.activeElement.id === 'chat-input') sendMessage();
+    });
+  </script>
+</body>
+</html>

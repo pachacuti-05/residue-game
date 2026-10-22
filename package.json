@@ -1,0 +1,20 @@
+{
+  "name": "residue-game",
+  "version": "2.0.0",
+  "description": "Residue - Monopoly-style living board game",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "socket.io": "^4.8.0",
+    "cors": "^2.8.5",
+    "uuid": "^10.0.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
